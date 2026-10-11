@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ResuMind – AI Resume Analyzer & Interview Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #05070f;
+      --surface:   #0b0f1e;
+      --card:      #0f1628;
+      --border:    rgba(80,140,255,0.18);
+      --accent:    #3b82f6;
+      --accent2:   #06b6d4;
+      --accent3:   #a78bfa;
+      --glow:      rgba(59,130,246,0.35);
+      --glow2:     rgba(6,182,212,0.25);
+      --text:      #e2eaff;
+      --muted:     #6b7eb8;
+      --success:   #22d3a0;
+      --warning:   #f59e0b;
+      --danger:    #f43f5e;
+      --mono:      'Space Mono', monospace;
+      --display:   'Syne', sans-serif;
+      --body:      'DM Sans', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── ANIMATED BACKGROUND ─── */
+    .bg-mesh {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 20%, rgba(59,130,246,0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 50% at 85% 75%, rgba(167,139,250,0.09) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 40% at 50% 50%, rgba(6,182,212,0.07) 0%, transparent 70%),
+        var(--bg);
+    }
+
+    .grid-overlay {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+      background-size: 50px 50px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    /* Floating particles */
+    .particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      animation: float-particle linear infinite;
+      opacity: 0;
+    }
+
+    @keyframes float-particle {
+      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 0.6; }
+      100% { transform: translateY(-20px) scale(1); opacity: 0; }
+    }
+
+    /* ─── LAYOUT ─── */
+    .wrapper { position: relative; z-index: 1; }
+
+    /* ─── NAVBAR ─── */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.2rem 3rem;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      background: rgba(5,7,15,0.7);
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    .nav-logo {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 1.3rem;
+      letter-spacing: -0.5px;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .nav-logo .dot { color: var(--accent2); }
+
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-links a {
+      font-family: var(--mono); font-size: 0.75rem;
+      color: var(--muted); text-decoration: none;
+      letter-spacing: 1px; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-badge {
+      font-family: var(--mono); font-size: 0.65rem;
+      padding: 0.3rem 0.8rem; border-radius: 20px;
+      border: 1px solid var(--accent);
+      color: var(--accent); letter-spacing: 1px;
+      animation: pulse-border 2.5s infinite;
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); }
+      50%       { box-shadow: 0 0 0 6px rgba(59,130,246,0); }
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      padding: 7rem 3rem 4rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-family: var(--mono); font-size: 0.7rem;
+      color: var(--accent2); letter-spacing: 2px; text-transform: uppercase;
+      padding: 0.4rem 1.2rem;
+      background: rgba(6,182,212,0.08);
+      border: 1px solid rgba(6,182,212,0.2);
+      border-radius: 20px; margin-bottom: 2rem;
+      animation: fade-up 0.6s ease both;
+    }
+
+    .hero-tag .ping {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent2);
+      animation: ping 1.5s cubic-bezier(0,0,0.2,1) infinite;
+    }
+
+    @keyframes ping {
+      75%, 100% { transform: scale(2); opacity: 0; }
+    }
+
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(2.8rem, 6vw, 5.5rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -2px;
+      animation: fade-up 0.7s 0.1s ease both;
+    }
+
+    h1 .line-glow {
+      background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: block;
+    }
+
+    .hero-sub {
+      max-width: 560px; margin: 1.8rem auto 0;
+      color: var(--muted); font-size: 1.05rem; line-height: 1.7;
+      animation: fade-up 0.7s 0.2s ease both;
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── STATS ROW ─── */
+    .stats-row {
+      display: flex; justify-content: center; gap: 3rem;
+      padding: 2.5rem 3rem;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      animation: fade-up 0.7s 0.3s ease both;
+    }
+    .stat { text-align: center; }
+    .stat-val {
+      font-family: var(--display); font-size: 2rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; margin-top: 0.2rem; }
+
+    /* ─── MAIN UPLOAD SECTION ─── */
+    .main-section {
+      padding: 4rem 3rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    /* ─── UPLOAD CARD ─── */
+    .upload-card {
+      grid-column: 1 / -1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3rem;
+      position: relative;
+      overflow: hidden;
+      animation: fade-up 0.8s 0.4s ease both;
+    }
+
+    .upload-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+      animation: shimmer 3s linear infinite;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+
+    .upload-card-header {
+      display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;
+    }
+
+    .icon-box {
+      width: 48px; height: 48px;
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.25);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+    }
+
+    .card-title {
+      font-family: var(--display); font-size: 1.4rem; font-weight: 700;
+    }
+    .card-sub { color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+
+    /* Drop Zone */
+    .drop-zone {
+      border: 2px dashed rgba(59,130,246,0.3);
+      border-radius: 16px;
+      padding: 4rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: rgba(59,130,246,0.03);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(59,130,246,0.07);
+      transform: scale(1.01);
+      box-shadow: 0 0 40px rgba(59,130,246,0.15);
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+
+    .drop-icon {
+      width: 72px; height: 72px; margin: 0 auto 1.5rem;
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-8px); }
+    }
+
+    .drop-title {
+      font-family: var(--display); font-size: 1.2rem; font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .drop-hint { color: var(--muted); font-size: 0.85rem; }
+    .drop-hint span { color: var(--accent); font-weight: 500; }
+
+    .file-types {
+      display: flex; justify-content: center; gap: 0.8rem; margin-top: 1.5rem;
+    }
+    .file-tag {
+      font-family: var(--mono); font-size: 0.65rem;
+      padding: 0.25rem 0.7rem; border-radius: 6px;
+      border: 1px solid var(--border);
+      color: var(--muted); letter-spacing: 1px;
+    }
+
+    /* File selected state */
+    .file-preview {
+      display: none;
+      align-items: center; gap: 1.2rem;
+      padding: 1.2rem 1.5rem;
+      background: rgba(34,211,160,0.06);
+      border: 1px solid rgba(34,211,160,0.2);
+      border-radius: 12px;
+      margin-top: 1.5rem;
+    }
+    .file-preview.show { display: flex; }
+    .file-icon-lg { font-size: 2rem; }
+    .file-info { flex: 1; }
+    .file-name { font-family: var(--mono); font-size: 0.85rem; color: var(--success); }
+    .file-size { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+    .file-remove {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.2);
+      color: var(--danger); cursor: pointer; font-size: 0.9rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .file-remove:hover { background: rgba(244,63,94,0.2); }
+
+    /* ─── JOB ROLE INPUT ─── */
+    .input-group { margin-top: 1.5rem; }
+    .input-label {
+      font-family: var(--mono); font-size: 0.7rem;
+      color: var(--muted); letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 0.6rem; display: block;
+    }
+    .styled-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem 1.2rem;
+      color: var(--text);
+      font-family: var(--body); font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .styled-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    }
+    .styled-input::placeholder { color: var(--muted); }
+
+    /* ─── OPTIONS ROW ─── */
+    .options-row {
+      display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;
+    }
+    .option-chip {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer; font-size: 0.82rem; color: var(--muted);
+      transition: all 0.2s; user-select: none;
+    }
+    .option-chip input { display: none; }
+    .option-chip:has(input:checked), .option-chip.active {
+      border-color: var(--accent);
+      background: rgba(59,130,246,0.1);
+      color: var(--text);
+    }
+    .option-chip .chip-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border);
+      transition: background 0.2s;
+    }
+    .option-chip.active .chip-dot { background: var(--accent); }
+
+    /* ─── ANALYZE BUTTON ─── */
+    .btn-analyze {
+      width: 100%; margin-top: 1.8rem;
+      padding: 1.1rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: 12px;
+      color: #fff; font-family: var(--display);
+      font-size: 1.05rem; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.5px;
+      position: relative; overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-analyze::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .btn-analyze:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(59,130,246,0.4); }
+    .btn-analyze:hover::before { opacity: 1; }
+    .btn-analyze:active { transform: translateY(0); }
+    .btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-content { display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
+    .btn-spinner { display: none; }
+    .btn-spinner.show { display: inline-block; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── RESULTS AREA ─── */
+    .results-area {
+      max-width: 1280px; margin: 0 auto;
+      padding: 0 3rem 5rem;
+      display: none;
+    }
+    .results-area.show { display: block; animation: fade-up 0.6s ease; }
+
+    .section-title {
+      font-family: var(--display); font-size: 1.8rem; font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+    .section-tag {
+      font-family: var(--mono); font-size: 0.65rem;
+      color: var(--accent2); letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 0.8rem; display: block;
+    }
+
+    /* ─── SCORE CARD ─── */
+    .results-grid { display: grid; grid-template-columns: 300px 1fr; gap: 1.5rem; margin-top: 2rem; }
+
+    .score-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2rem;
+      text-align: center;
+      position: relative; overflow: hidden;
+    }
+
+    .score-ring {
+      width: 140px; height: 140px;
+      margin: 0 auto 1.5rem;
+      position: relative;
+    }
+    .score-ring svg { transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: var(--border); stroke-width: 8; }
+    .ring-fill {
+      fill: none; stroke-width: 8;
+      stroke: url(#scoreGrad);
+      stroke-linecap: round;
+      stroke-dasharray: 351.86;
+      stroke-dashoffset: 351.86;
+      transition: stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1);
+    }
+    .score-number {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .score-val {
+      font-family: var(--display); font-size: 2.2rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .score-label { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); letter-spacing: 1px; }
+
+    .score-grade {
+      font-family: var(--display); font-size: 1.1rem; font-weight: 700; margin-bottom: 0.3rem;
+    }
+    .score-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+
+    /* mini bars */
+    .mini-scores { margin-top: 1.5rem; text-align: left; }
+    .mini-score-row { margin-bottom: 0.9rem; }
+    .mini-score-label { display: flex; justify-content: space-between;
+      font-size: 0.75rem; color: var(--muted); margin-bottom: 0.4rem; }
+    .mini-score-label span:last-child { color: var(--text); font-weight: 600; }
+    .mini-bar { height: 5px; background: var(--border); border-radius: 10px; overflow: hidden; }
+    .mini-bar-fill {
+      height: 100%; border-radius: 10px; width: 0;
+      transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ─── ANALYSIS PANEL ─── */
+    .analysis-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2rem;
+      overflow: hidden;
+    }
+
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .tab {
+      padding: 0.5rem 1.1rem;
+      border-radius: 8px;
+      font-family: var(--mono); font-size: 0.7rem;
+      letter-spacing: 1px; text-transform: uppercase;
+      cursor: pointer; border: 1px solid var(--border);
+      color: var(--muted); transition: all 0.2s;
+    }
+    .tab.active {
+      background: rgba(59,130,246,0.1);
+      border-color: var(--accent); color: var(--text);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fade-in 0.3s ease; }
+
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+    /* Skill tags */
+    .skill-cluster { margin-bottom: 1.5rem; }
+    .cluster-label {
+      font-family: var(--mono); font-size: 0.65rem;
+      color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 0.7rem; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .cluster-label::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .skill-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .skill-tag {
+      padding: 0.35rem 0.8rem; border-radius: 6px;
+      font-size: 0.78rem; font-family: var(--mono);
+      border: 1px solid; transition: transform 0.15s;
+    }
+    .skill-tag:hover { transform: scale(1.05); }
+    .skill-tag.strong { border-color: rgba(34,211,160,0.3); color: var(--success); background: rgba(34,211,160,0.07); }
+    .skill-tag.moderate { border-color: rgba(245,158,11,0.3); color: var(--warning); background: rgba(245,158,11,0.07); }
+    .skill-tag.missing { border-color: rgba(244,63,94,0.3); color: var(--danger); background: rgba(244,63,94,0.07); }
+
+    /* Feedback items */
+    .feedback-list { display: flex; flex-direction: column; gap: 0.8rem; }
+    .feedback-item {
+      display: flex; gap: 0.8rem; padding: 1rem;
+      border-radius: 10px; border: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+    .feedback-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .feedback-text { font-size: 0.85rem; line-height: 1.6; color: var(--text); }
+    .feedback-text strong { color: var(--accent2); }
+
+    /* ─── INTERVIEW QUESTIONS ─── */
+    .questions-section { margin-top: 2rem; }
+    .q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    .q-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.4rem;
+      transition: border-color 0.2s, transform 0.2s;
+      cursor: pointer;
+      position: relative; overflow: hidden;
+    }
+    .q-card:hover { border-color: rgba(59,130,246,0.4); transform: translateY(-2px); }
+
+    .q-card::after {
+      content: '';
+      position: absolute; top: 0; left: 0;
+      width: 3px; height: 100%;
+    }
+    .q-card.behavioral::after { background: var(--accent3); }
+    .q-card.technical::after  { background: var(--accent); }
+    .q-card.situational::after { background: var(--accent2); }
+    .q-card.hr::after          { background: var(--success); }
+
+    .q-type {
+      font-family: var(--mono); font-size: 0.6rem;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 0.7rem;
+    }
+    .q-type.behavioral { color: var(--accent3); }
+    .q-type.technical  { color: var(--accent); }
+    .q-type.situational { color: var(--accent2); }
+    .q-type.hr         { color: var(--success); }
+
+    .q-text { font-size: 0.88rem; line-height: 1.65; color: var(--text); }
+
+    .q-difficulty {
+      display: flex; align-items: center; gap: 0.3rem;
+      margin-top: 0.8rem;
+    }
+    .diff-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+    }
+
+    /* ─── HOW IT WORKS ─── */
+    .how-section {
+      max-width: 1280px; margin: 0 auto;
+      padding: 4rem 3rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .how-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-top: 2.5rem; }
+
+    .how-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.8rem;
+      position: relative;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .how-card:hover { border-color: var(--border); transform: translateY(-4px); }
+
+    .how-num {
+      font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
+      letter-spacing: 2px; margin-bottom: 1rem;
+    }
+    .how-icon { font-size: 1.8rem; margin-bottom: 0.8rem; }
+    .how-title { font-family: var(--display); font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .how-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+
+    .connector {
+      position: absolute; right: -1.5rem; top: 50%;
+      transform: translateY(-50%);
+      width: 1.5rem; text-align: center;
+      color: var(--muted); font-size: 0.8rem; z-index: 1;
+    }
+    .how-card:last-child .connector { display: none; }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 3rem;
+      display: flex; justify-content: space-between; align-items: center;
+      color: var(--muted); font-size: 0.8rem;
+    }
+    .footer-logo { font-family: var(--display); font-size: 1rem; font-weight: 700; }
+
+    /* ─── TOAST ─── */
+    .toast {
+      position: fixed; bottom: 2rem; right: 2rem;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem 1.5rem;
+      font-size: 0.85rem; display: flex; align-items: center; gap: 0.7rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      z-index: 999;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ─── PROGRESS BAR ─── */
+    .progress-wrap { display: none; margin-top: 1.5rem; }
+    .progress-wrap.show { display: block; }
+    .progress-label {
+      display: flex; justify-content: space-between;
+      font-family: var(--mono); font-size: 0.65rem;
+      color: var(--muted); margin-bottom: 0.5rem;
+    }
+    .progress-track {
+      height: 4px; background: var(--border); border-radius: 10px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; width: 0; border-radius: 10px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.3s ease;
+    }
+    .progress-steps {
+      display: flex; gap: 0.7rem; margin-top: 1rem; flex-wrap: wrap;
+    }
+    .progress-step {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.75rem; color: var(--muted); padding: 0.3rem 0.7rem;
+      border-radius: 6px; border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+    .progress-step.done { color: var(--success); border-color: rgba(34,211,160,0.3); background: rgba(34,211,160,0.06); }
+    .progress-step.active { color: var(--accent); border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.08); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      .results-grid { grid-template-columns: 1fr; }
+      .q-grid { grid-template-columns: 1fr; }
+      .how-grid { grid-template-columns: 1fr 1fr; }
+      .main-section { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .stats-row { gap: 2rem; padding: 2rem 1.5rem; }
+      nav { padding: 1rem 1.5rem; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-mesh"></div>
+<div class="grid-overlay"></div>
+<div class="particles" id="particles"></div>
+
+<div class="wrapper">
+
+  <!-- NAVBAR -->
+  <nav>
+    <div class="nav-logo">
+      <span>Resu<span class="dot">Mind</span></span>
+    </div>
+    <div class="nav-links">
+      <a href="#">Analyze</a>
+      <a href="#">Features</a>
+      <a href="#">How it works</a>
+      <a href="#">Docs</a>
+    </div>
+    <div class="nav-badge">AI POWERED</div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-tag">
+      <span class="ping"></span>
+      Powered by Advanced LLM Technology
+    </div>
+    <h1>
+      Resume Analyzer &<br>
+      <span class="line-glow">Interview Question Generator</span>
+    </h1>
+    <p class="hero-sub">
+      Upload your resume and let our AI deeply analyze your skills, experience, and gaps —
+      then generate tailored interview questions to prepare you for your dream role.
+    </p>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-val">98.4%</div>
+      <div class="stat-label">Parse Accuracy</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">50+</div>
+      <div class="stat-label">Job Domains</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">200+</div>
+      <div class="stat-label">Question Types</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">&lt;30s</div>
+      <div class="stat-label">Analysis Time</div>
+    </div>
+  </div>
+
+  <!-- MAIN SECTION -->
+  <section class="main-section">
+
+    <!-- UPLOAD CARD -->
+    <div class="upload-card">
+      <div class="upload-card-header">
+        <div class="icon-box">📄</div>
+        <div>
+          <div class="card-title">Upload Your Resume</div>
+          <div class="card-sub">We'll extract skills, experience, and tailor your interview prep</div>
+        </div>
+      </div>
+
+      <!-- Drop Zone -->
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt" />
+        <div class="drop-icon">📂</div>
+        <div class="drop-title">Drop your resume here</div>
+        <div class="drop-hint">or <span>click to browse</span> files</div>
+        <div class="file-types">
+          <span class="file-tag">PDF</span>
+          <span class="file-tag">DOCX</span>
+          <span class="file-tag">DOC</span>
+          <span class="file-tag">TXT</span>
+        </div>
+      </div>
+
+      <!-- File Preview -->
+      <div class="file-preview" id="filePreview">
+        <div class="file-icon-lg">📄</div>
+        <div class="file-info">
+          <div class="file-name" id="fileName">resume.pdf</div>
+          <div class="file-size" id="fileSize">2.4 MB</div>
+        </div>
+        <div class="file-remove" id="removeFile" title="Remove file">✕</div>
+      </div>
+
+      <!-- Job Role Input -->
+      <div class="input-group">
+        <label class="input-label" for="jobRole">Target Job Role (optional)</label>
+        <input type="text" id="jobRole" class="styled-input"
+          placeholder="e.g. Senior Software Engineer, Data Scientist, Product Manager…"/>
+      </div>
+
+      <!-- Options -->
+      <div class="input-group">
+        <label class="input-label">Analysis Type</label>
+        <div class="options-row">
+          <label class="option-chip active" id="chip1">
+            <input type="radio" name="analysis" value="full" checked/>
+            <span class="chip-dot"></span> Full Analysis
+          </label>
+          <label class="option-chip" id="chip2">
+            <input type="radio" name="analysis" value="skills"/>
+            <span class="chip-dot"></span> Skills Only
+          </label>
+          <label class="option-chip" id="chip3">
+            <input type="radio" name="analysis" value="questions"/>
+            <span class="chip-dot"></span> Questions Only
+          </label>
+        </div>
+      </div>
+
+      <!-- Number of Questions -->
+      <div class="input-group">
+        <label class="input-label" for="numQ">Number of Interview Questions</label>
+        <input type="number" id="numQ" class="styled-input" value="8" min="4" max="20" />
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-label">
+          <span id="progressLabel">Parsing resume…</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-steps">
+          <div class="progress-step" id="step1">📄 Parsing Document</div>
+          <div class="progress-step" id="step2">🧠 AI Analysis</div>
+          <div class="progress-step" id="step3">🔍 Skill Mapping</div>
+          <div class="progress-step" id="step4">💬 Generating Questions</div>
+          <div class="progress-step" id="step5">✅ Finalizing</div>
+        </div>
+      </div>
+
+      <!-- Button -->
+      <button class="btn-analyze" id="analyzeBtn" disabled>
+        <span class="btn-content">
+          <span class="btn-spinner" id="btnSpinner">⟳</span>
+          <span id="btnText">⚡ Analyze Resume</span>
+        </span>
+      </button>
+    </div>
+
+  </section>
+
+  <!-- RESULTS AREA -->
+  <div class="results-area" id="resultsArea">
+
+    <span class="section-tag">Analysis Complete</span>
+    <div class="section-title">Your Resume Report</div>
+
+    <div class="results-grid">
+
+      <!-- Score Card -->
+      <div class="score-card">
+        <div class="score-ring">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <defs>
+              <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#3b82f6"/>
+                <stop offset="100%" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+            <circle class="ring-bg" cx="70" cy="70" r="56"/>
+            <circle class="ring-fill" id="ringFill" cx="70" cy="70" r="56"/>
+          </svg>
+          <div class="score-number">
+            <div class="score-val" id="scoreVal">0</div>
+            <div class="score-label">/ 100</div>
+          </div>
+        </div>
+        <div class="score-grade" id="scoreGrade">Excellent</div>
+        <div class="score-desc" id="scoreDesc">Strong candidate profile with clear career progression and relevant technical skills.</div>
+
+        <div class="mini-scores">
+          <div class="mini-score-row">
+            <div class="mini-score-label"><span>Skill Relevance</span><span id="s1">92%</span></div>
+            <div class="mini-bar"><div class="mini-bar-fill" id="b1" style="background:var(--accent);"></div></div>
+          </div>
+          <div class="mini-score-row">
+            <div class="mini-score-label"><span>Experience Depth</span><span id="s2">85%</span></div>
+            <div class="mini-bar"><div class="mini-bar-fill" id="b2" style="background:var(--accent2);"></div></div>
+          </div>
+          <div class="mini-score-row">
+            <div class="mini-score-label"><span>ATS Friendliness</span><span id="s3">78%</span></div>
+            <div class="mini-bar"><div class="mini-bar-fill" id="b3" style="background:var(--accent3);"></div></div>
+          </div>
+          <div class="mini-score-row">
+            <div class="mini-score-label"><span>Formatting Quality</span><span id="s4">88%</span></div>
+            <div class="mini-bar"><div class="mini-bar-fill" id="b4" style="background:var(--success);"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analysis Panel -->
+      <div class="analysis-panel">
+        <div class="tabs">
+          <div class="tab active" data-tab="skills">Skills</div>
+          <div class="tab" data-tab="feedback">Feedback</div>
+          <div class="tab" data-tab="summary">Summary</div>
+        </div>
+
+        <!-- Skills Tab -->
+        <div class="tab-panel active" id="tab-skills">
+          <div class="skill-cluster">
+            <div class="cluster-label">Strong Skills</div>
+            <div class="skill-tags" id="strongSkills"></div>
+          </div>
+          <div class="skill-cluster">
+            <div class="cluster-label">Present but Moderate</div>
+            <div class="skill-tags" id="modSkills"></div>
+          </div>
+          <div class="skill-cluster">
+            <div class="cluster-label">Gaps / Missing</div>
+            <div class="skill-tags" id="missingSkills"></div>
+          </div>
+        </div>
+
+        <!-- Feedback Tab -->
+        <div class="tab-panel" id="tab-feedback">
+          <div class="feedback-list" id="feedbackList"></div>
+        </div>
+
+        <!-- Summary Tab -->
+        <div class="tab-panel" id="tab-summary">
+          <div id="summaryText" style="font-size:0.88rem;line-height:1.8;color:var(--text);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INTERVIEW QUESTIONS -->
+    <div class="questions-section">
+      <span class="section-tag" style="margin-top:2.5rem;display:block;">AI Generated</span>
+      <div class="section-title">Interview Questions</div>
+      <div class="q-grid" id="qGrid" style="margin-top:1.5rem;"></div>
+    </div>
+
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <section class="how-section">
+    <span class="section-tag">Process</span>
+    <div class="section-title">How ResuMind Works</div>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-num">01 ────</div>
+        <div class="how-icon">📤</div>
+        <div class="how-title">Upload Resume</div>
+        <div class="how-desc">Securely upload your resume in PDF, DOCX or TXT. Our parser handles any format.</div>
+        <div class="connector">→</div>
+      </div>
+      <div class="how-card">
+        <div class="how-num">02 ────</div>
+        <div class="how-icon">🧠</div>
+        <div class="how-title">AI Parsing</div>
+        <div class="how-desc">LLM extracts structured data: skills, experience, education, and achievements.</div>
+        <div class="connector">→</div>
+      </div>
+      <div class="how-card">
+        <div class="how-num">03 ────</div>
+        <div class="how-icon">🔬</div>
+        <div class="how-title">Deep Analysis</div>
+        <div class="how-desc">Skill gap mapping, ATS score, formatting quality, and role-fit scoring.</div>
+        <div class="connector">→</div>
+      </div>
+      <div class="how-card">
+        <div class="how-num">04 ────</div>
+        <div class="how-icon">💬</div>
+        <div class="how-title">Generate Questions</div>
+        <div class="how-desc">Tailored behavioral, technical, situational, and HR interview questions generated just for you.</div>
+        <div class="connector">→</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">Resu<span style="color:var(--accent2)">Mind</span></div>
+    <div>Built with AI · Resume Analyzer & Interview Generator</div>
+    <div style="font-family:var(--mono);font-size:0.65rem;letter-spacing:1px;">v2.1.0</div>
+  </footer>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toastIcon">✅</span>
+  <span id="toastMsg">Analysis complete!</span>
+</div>
+
+<script>
+// ─── PARTICLES ───
+(function() {
+  const container = document.getElementById('particles');
+  const colors = ['#3b82f6','#06b6d4','#a78bfa','#22d3a0','#f59e0b'];
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 4 + 2;
+    p.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:${Math.random()*100}%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-duration:${Math.random()*15+10}s;
+      animation-delay:${Math.random()*10}s;
+    `;
+    container.appendChild(p);
+  }
+})();
+
+// ─── FILE UPLOAD ───
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const filePreview = document.getElementById('filePreview');
+const fileName = document.getElementById('fileName');
+const fileSize = document.getElementById('fileSize');
+const removeFile = document.getElementById('removeFile');
+const analyzeBtn = document.getElementById('analyzeBtn');
+
+let selectedFile = null;
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+function setFile(file) {
+  if (!file) return;
+  selectedFile = file;
+  fileName.textContent = file.name;
+  fileSize.textContent = formatBytes(file.size);
+  filePreview.classList.add('show');
+  analyzeBtn.disabled = false;
+  dropZone.style.opacity = '0.5';
+  dropZone.style.pointerEvents = 'none';
+}
+
+fileInput.addEventListener('change', e => setFile(e.target.files[0]));
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+});
+
+removeFile.addEventListener('click', () => {
+  selectedFile = null;
+  fileInput.value = '';
+  filePreview.classList.remove('show');
+  analyzeBtn.disabled = true;
+  dropZone.style.opacity = '';
+  dropZone.style.pointerEvents = '';
+});
+
+// ─── OPTION CHIPS ───
+document.querySelectorAll('.option-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.option-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  });
+});
+
+// ─── TABS ───
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ─── TOAST ───
+function showToast(msg, icon='✅') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastIcon').textContent = icon;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─── PROGRESS SIMULATION ───
+function runProgress() {
+  return new Promise(resolve => {
+    const wrap = document.getElementById('progressWrap');
+    const fill = document.getElementById('progressFill');
+    const label = document.getElementById('progressLabel');
+    const pct = document.getElementById('progressPct');
+    wrap.classList.add('show');
+
+    const steps = [
+      { id:'step1', label:'Parsing document…', pct:20 },
+      { id:'step2', label:'Running AI analysis…', pct:45 },
+      { id:'step3', label:'Mapping skill gaps…', pct:65 },
+      { id:'step4', label:'Generating interview questions…', pct:85 },
+      { id:'step5', label:'Finalizing report…', pct:100 },
+    ];
+
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i > 0) document.getElementById(steps[i-1].id).className = 'progress-step done';
+      if (i < steps.length) {
+        const s = steps[i];
+        document.getElementById(s.id).className = 'progress-step active';
+        fill.style.width = s.pct + '%';
+        label.textContent = s.label;
+        pct.textContent = s.pct + '%';
+        i++;
+      } else {
+        clearInterval(interval);
+        wrap.classList.remove('show');
+        resolve();
+      }
+    }, 700);
+  });
+}
+
+// ─── MOCK DATA ───
+const mockResults = {
+  score: 82,
+  grade: 'Strong Match',
+  desc: 'Your profile demonstrates solid technical depth and relevant project experience. Minor gaps in cloud-native tooling.',
+  miniScores: [
+    { id:'s1', bar:'b1', val:'92%', pct:'92' },
+    { id:'s2', bar:'b2', val:'85%', pct:'85' },
+    { id:'s3', bar:'b3', val:'73%', pct:'73' },
+    { id:'s4', bar:'b4', val:'88%', pct:'88' },
+  ],
+  strong: ['Python','Machine Learning','SQL','Data Analysis','TensorFlow','REST APIs','Git','Linux','Pandas','Scikit-learn'],
+  moderate: ['Docker','React.js','AWS Basics','CI/CD','Agile'],
+  missing: ['Kubernetes','Apache Kafka','Terraform','GraphQL'],
+  feedback: [
+    { icon:'✅', text:'<strong>Strong quantifiable achievements</strong> – Your bullet points include measurable impact (e.g., "reduced latency by 40%"), which is highly effective for ATS and recruiters.' },
+    { icon:'⚠️', text:'<strong>ATS keyword gap</strong> – Missing industry-standard keywords like "MLOps", "model deployment" and "data pipeline" relevant to your target role.' },
+    { icon:'💡', text:'<strong>Add a summary section</strong> – A 2–3 line professional summary at the top significantly improves ATS ranking and recruiter first impressions.' },
+    { icon:'🔧', text:'<strong>Cloud experience needs strengthening</strong> – Add specific cloud project experience (AWS/GCP/Azure) with concrete outcomes to close the skills gap.' },
+    { icon:'📝', text:'<strong>Formatting is clean</strong> – Consistent use of action verbs and structured sections improves readability across all parsers.' },
+  ],
+  summary: `Your resume reflects a technically competent professional with a strong foundation in data science and machine learning. 
+The profile shows 4+ years of progressive experience with meaningful contributions across model development and data pipeline work.
+<br><br>
+Key strengths include hands-on Python and ML framework expertise, solid academic credentials, and quantifiable project outcomes.
+The primary areas for improvement center on cloud-native tooling and MLOps practices, which are increasingly critical in modern data roles.
+<br><br>
+Overall, this is a competitive profile for mid-to-senior data science roles. With targeted additions around cloud deployment experience and a few ATS keyword optimizations, the profile would rank in the top 15% of applicants for the specified target role.`,
+  questions: [
+    { type:'technical',   label:'Technical',   diff:3, text:'Explain the difference between bagging and boosting ensemble methods. When would you prefer one over the other in a production scenario?' },
+    { type:'behavioral',  label:'Behavioral',  diff:2, text:'Describe a situation where you had to communicate a complex technical finding to a non-technical stakeholder. How did you structure your explanation?' },
+    { type:'situational', label:'Situational',  diff:3, text:'You notice a critical bug in a deployed ML model affecting 20% of predictions. Walk me through your incident response process.' },
+    { type:'technical',   label:'Technical',   diff:4, text:'How would you design a scalable feature store for a real-time recommendation engine handling 10M daily requests?' },
+    { type:'hr',          label:'HR',          diff:1, text:'Where do you see yourself in 3 years, and how does this role align with your long-term career goals?' },
+    { type:'behavioral',  label:'Behavioral',  diff:2, text:'Tell me about a time you disagreed with a team decision on a technical approach. How did you handle it?' },
+    { type:'situational', label:'Situational',  diff:3, text:'Your model accuracy drops 12% after a production deployment. The business is impacted. What are your immediate next steps?' },
+    { type:'technical',   label:'Technical',   diff:4, text:'Compare transformer-based architectures vs. traditional NLP approaches for a document classification task with limited labeled data.' },
+  ]
+};
+
+function diffDots(n) {
+  const colors = ['#22d3a0','#f59e0b','#f43f5e','#a78bfa'];
+  return Array.from({length:4}, (_,i) =>
+    `<span class="diff-dot" style="background:${i < n ? colors[n-1] : 'var(--border)'}"></span>`
+  ).join('');
+}
+
+// ─── RENDER RESULTS ───
+function renderResults(data) {
+  // Score ring
+  const circumference = 2 * Math.PI * 56; // 351.86
+  const offset = circumference - (data.score / 100) * circumference;
+  setTimeout(() => {
+    document.getElementById('ringFill').style.strokeDashoffset = offset;
+  }, 100);
+
+  // Score number count-up
+  let current = 0;
+  const target = data.score;
+  const timer = setInterval(() => {
+    current = Math.min(current + 2, target);
+    document.getElementById('scoreVal').textContent = current;
+    if (current >= target) clearInterval(timer);
+  }, 20);
+
+  document.getElementById('scoreGrade').textContent = data.grade;
+  document.getElementById('scoreDesc').textContent = data.desc;
+
+  // Mini bars
+  setTimeout(() => {
+    data.miniScores.forEach(m => {
+      document.getElementById(m.id).textContent = m.val;
+      document.getElementById(m.bar).style.width = m.pct + '%';
+    });
+  }, 300);
+
+  // Skills
+  const makeTag = (text, cls) =>
+    `<span class="skill-tag ${cls}">${text}</span>`;
+
+  document.getElementById('strongSkills').innerHTML = data.strong.map(s=>makeTag(s,'strong')).join('');
+  document.getElementById('modSkills').innerHTML = data.moderate.map(s=>makeTag(s,'moderate')).join('');
+  document.getElementById('missingSkills').innerHTML = data.missing.map(s=>makeTag(s,'missing')).join('');
+
+  // Feedback
+  document.getElementById('feedbackList').innerHTML = data.feedback.map(f =>
+    `<div class="feedback-item">
+      <div class="feedback-icon">${f.icon}</div>
+      <div class="feedback-text">${f.text}</div>
+    </div>`
+  ).join('');
+
+  // Summary
+  document.getElementById('summaryText').innerHTML = data.summary;
+
+  // Questions
+  document.getElementById('qGrid').innerHTML = data.questions.map(q =>
+    `<div class="q-card ${q.type}">
+      <div class="q-type ${q.type}">${q.label}</div>
+      <div class="q-text">${q.text}</div>
+      <div class="q-difficulty">${diffDots(q.diff)} <span style="font-size:0.65rem;color:var(--muted);margin-left:0.5rem;font-family:var(--mono)">DIFFICULTY</span></div>
+    </div>`
+  ).join('');
+
+  // Show results
+  document.getElementById('resultsArea').classList.add('show');
+  document.getElementById('resultsArea').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// ─── ANALYZE BUTTON ───
+analyzeBtn.addEventListener('click', async () => {
+  if (!selectedFile) { showToast('Please upload a resume first!', '⚠️'); return; }
+
+  analyzeBtn.disabled = true;
+  document.getElementById('btnSpinner').classList.add('show');
+  document.getElementById('btnText').textContent = 'Analyzing…';
+
+  await runProgress();
+
+  document.getElementById('btnSpinner').classList.remove('show');
+  document.getElementById('btnText').textContent = '⚡ Analyze Resume';
+  analyzeBtn.disabled = false;
+
+  renderResults(mockResults);
+  showToast('Analysis complete! Scroll down to see your report.', '🧠');
+});
+</script>
+</body>
+</html>
